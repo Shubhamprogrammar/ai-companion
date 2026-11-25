@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from app.ai.agent import CompanionAgent, CompanionTurn
@@ -79,3 +80,27 @@ def _with(turn: CompanionTurn, memory_enabled: bool) -> CompanionTurn:
         memory_enabled=memory_enabled,
         memories=["User's name is Asha"] if memory_enabled else [],
     )
+
+
+def test_voice_devanagari_transcript_is_answered_in_hinglish() -> None:
+    # Speech recognition writes spoken Hinglish in Devanagari; replies should still be Roman.
+    agent = CompanionAgent(FakeLLM(), make_settings())
+    turn = replace(_turn(uuid.uuid4(), text="यार कल मेरी meeting है"), voice_mode=True)
+    prepared = agent.prepare(turn)
+    assert prepared.detected_language is Language.HINGLISH
+    assert "never in Devanagari" in prepared.request.instructions
+
+
+def test_typed_devanagari_stays_hindi() -> None:
+    agent = CompanionAgent(FakeLLM(), make_settings())
+    prepared = agent.prepare(_turn(uuid.uuid4(), text="यार कल मेरी meeting है"))
+    assert prepared.detected_language is Language.HINDI
+
+
+def test_voice_keeps_hindi_when_user_prefers_hindi() -> None:
+    agent = CompanionAgent(FakeLLM(), make_settings())
+    turn = replace(_turn(uuid.uuid4(), text="यार कल मेरी meeting है"), voice_mode=True)
+    turn.profile.preferred_language = Language.HINDI
+    prepared = agent.prepare(turn)
+    assert prepared.detected_language is Language.HINDI
+    assert "never in Devanagari" not in prepared.request.instructions

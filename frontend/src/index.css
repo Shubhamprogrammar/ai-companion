@@ -190,7 +190,8 @@ pre {
   border-color: var(--accent);
   color: var(--accent-text);
 }
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled),
+.btn-primary:active:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
 }
@@ -1635,10 +1636,20 @@ input[type="range"] {
   -webkit-user-select: none;
   touch-action: none;
 }
-.talk-btn.live {
+/* Pressed = recording. Must beat .btn:hover/:active (sticky on touch screens),
+   otherwise the label turns dark-on-dark while the user is holding it. */
+.btn.talk-btn.live,
+.btn.talk-btn.live:hover:not(:disabled),
+.btn.talk-btn.live:active:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
+}
+.btn.talk-btn:active:not(:disabled) {
+  color: var(--text);
+}
+.voice-controls .switch span {
+  white-space: nowrap;
 }
 .end-call {
   background: var(--danger-soft);
@@ -1816,16 +1827,35 @@ input[type="range"] {
   .suggestions {
     grid-template-columns: 1fr;
   }
+  .composer-wrap {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
   .voice-dock {
     flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+  }
+  .orb-wrap {
+    width: 28px;
+    height: 28px;
+  }
+  .voice-info {
+    flex: 1 1 0;
   }
   .voice-controls {
     width: 100%;
-    justify-content: space-between;
+    min-width: 0;
+    gap: 8px;
   }
   .talk-btn {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 48px;
+    padding: 0 12px;
+  }
+  .voice-controls .end-call {
+    margin-left: auto;
   }
   .tool-chip,
   .confirm-card {

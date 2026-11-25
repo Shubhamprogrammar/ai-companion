@@ -112,6 +112,13 @@ class Settings(BaseSettings):
     # Language hints for speech-to-text (ISO-639-1). `languages` is supported by gpt-transcribe;
     # set to [] for models that don't accept it.
     openai_stt_languages: list[str] = Field(default_factory=lambda: ["en", "hi"])
+    # Style hint for transcripts: write spoken Hindi/Hinglish in Roman script, not
+    # Devanagari. Set to "" to disable.
+    openai_stt_prompt: str = (
+        "Transcribe Hindi and Hinglish speech in Roman script (Latin letters), never "
+        "Devanagari. Keep English words in English. Example: Yaar, kal subah meeting hai, "
+        "mujhe 9 baje remind kar dena."
+    )
     # Built-in voices accepted by the TTS API (users may pick any of these).
     openai_tts_voices: list[str] = Field(
         default_factory=lambda: [

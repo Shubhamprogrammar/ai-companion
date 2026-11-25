@@ -119,6 +119,14 @@ class CompanionAgent:
 
     def prepare(self, turn: CompanionTurn, *, now: datetime | None = None) -> PreparedTurn:
         detected = detect_language(turn.user_text)
+        if (
+            turn.voice_mode
+            and detected is Language.HINDI
+            and turn.profile.preferred_language is not Language.HINDI
+        ):
+            # Speech recognition writes spoken Hinglish in Devanagari; the script says
+            # nothing about how the user talks. Reply in Roman-script Hinglish instead.
+            detected = Language.HINGLISH
         capabilities, unavailable = _capabilities(turn)
         window = build_context_window(
             turn.history,

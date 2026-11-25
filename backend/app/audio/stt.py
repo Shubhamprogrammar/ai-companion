@@ -55,6 +55,8 @@ class OpenAISpeechToText:
         }
         if self._settings.openai_stt_languages:
             params["languages"] = list(self._settings.openai_stt_languages)
+        if self._settings.openai_stt_prompt:
+            params["prompt"] = self._settings.openai_stt_prompt
         return params
 
     async def transcribe(self, audio: ValidatedAudio, *, prompt: str | None = None) -> Transcript:

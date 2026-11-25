@@ -23,9 +23,16 @@ def test_short_secret_key_rejected() -> None:
         make_settings(secret_key="too-short")
 
 
-def test_sync_database_driver_rejected() -> None:
+@pytest.mark.parametrize("scheme", ["postgresql", "postgres"])
+def test_plain_postgres_url_upgraded_to_asyncpg(scheme: str) -> None:
+    # Managed hosts (Render, Neon, Heroku) hand out plain postgres:// URLs.
+    settings = make_settings(database_url=f"{scheme}://u:p@localhost/db?ssl=require")
+    assert settings.database_url == "postgresql+asyncpg://u:p@localhost/db?ssl=require"
+
+
+def test_other_database_driver_rejected() -> None:
     with pytest.raises(ValidationError, match="asyncpg"):
-        make_settings(database_url="postgresql://u:p@localhost/db")
+        make_settings(database_url="postgresql+psycopg2://u:p@localhost/db")
 
 
 def test_log_level_normalised_and_validated() -> None:

@@ -125,8 +125,8 @@ def _capabilities(p: PromptInputs) -> str:
     return "\n".join(lines)
 
 
-def _voice() -> str:
-    return (
+def _voice(p: PromptInputs) -> str:
+    text = (
         "# This is a voice conversation\n"
         "- The user is speaking to you and will hear your reply through text-to-speech.\n"
         "- Keep it brief, like a real spoken reply: one or two short sentences (under about "
@@ -136,11 +136,18 @@ def _voice() -> str:
         '(e.g. "around nine in the morning", not "~9:00 AM").\n'
         "- Their message was transcribed from speech and may contain transcription mistakes. "
         "Read it charitably, and if something is unclear, ask briefly.\n"
-        "- Speech recognition writes any spoken Hindi or Hinglish in Devanagari, even when the "
+        "- Speech recognition may write spoken Hindi or Hinglish in Devanagari, even when the "
         "user is speaking casual Hinglish. The script tells you nothing about their style, so "
         "match how they actually talk: casual, with English words mixed in, if that's how they "
         "speak. Avoid formal or literary Hindi."
     )
+    if p.user.preferred_language is not Language.HINDI:
+        text += (
+            "\n- When they speak Hindi or Hinglish, write your reply in Hinglish using Roman "
+            'script (e.g. "Haan, kal subah 9 baje remind kar dungi"), never in Devanagari, '
+            "even if their transcribed message is in Devanagari."
+        )
+    return text
 
 
 def _memory(p: PromptInputs) -> str:
@@ -243,7 +250,7 @@ def build_system_prompt(inputs: PromptInputs) -> str:
         _style(inputs),
         _language(inputs),
         _capabilities(inputs),
-        *((_voice(),) if inputs.voice_mode else ()),
+        *((_voice(inputs),) if inputs.voice_mode else ()),
         _memory(inputs),
         *((_tools(inputs),) if inputs.tools_available else ()),
         _wellbeing(),
