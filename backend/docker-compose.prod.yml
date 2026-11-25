@@ -1,0 +1,51 @@
+# Production overrides. Use together with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Differences from development:
+# - APP_ENV=production (docs off, unsafe settings refused at startup)
+# - Postgres and Redis are not published to the host at all
+# - POSTGRES_PASSWORD must be set (no default)
+# - the API container's filesystem is read-only
+# - TLS terminates at a reverse proxy in front of 127.0.0.1:8000 (see docs/deployment.md)
+
+services:
+  db:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    volumes: !override
+      - pgdata:/var/lib/postgresql/data  # no test database in production
+    restart: unless-stopped
+
+  redis:
+    ports: !reset []
+    restart: unless-stopped
+
+  api:
+    environment: &prod-env
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-companion}
+      REDIS_URL: redis://redis:6379/0
+      # The reverse proxy's address as seen from the container (often the bridge
+      # gateway, e.g. 172.18.0.1). Required: without it every client shares the
+      # proxy's IP for rate limits; "*" would let clients spoof X-Forwarded-For.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:?FORWARDED_ALLOW_IPS must be set to your proxy IP}
+      # uvicorn worker processes (≈ CPU cores). Each has its own DB pool
+      # (DB_POOL_SIZE + DB_MAX_OVERFLOW connections), so keep the total under
+      # Postgres's max_connections (100 by default).
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  maintenance:
+    environment: *prod-env
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]

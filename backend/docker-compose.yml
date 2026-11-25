@@ -1,0 +1,74 @@
+name: personal-ai-companion
+
+# Development stack. For production, layer docker-compose.prod.yml on top
+# (see docs/deployment.md):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-companion}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # :Z relabels for SELinux (Fedora); harmless elsewhere.
+      - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      # Host port defaults to 6380 to avoid clashing with a locally installed Redis.
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    image: personal-ai-companion:latest
+    env_file: .env
+    environment: &service-env
+      # Inside the compose network the app reaches services by name.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-companion}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  # Retention purge + pruning every MAINTENANCE_INTERVAL_MINUTES (scripts/maintenance.py).
+  maintenance:
+    image: personal-ai-companion:latest
+    pull_policy: never  # built locally by the api service; never on a registry
+    command: ["python", "-m", "scripts.maintenance", "--loop"]
+    env_file: .env
+    environment: *service-env
+    depends_on:
+      api:
+        condition: service_healthy  # migrations have run
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+volumes:
+  pgdata:
+  redisdata:

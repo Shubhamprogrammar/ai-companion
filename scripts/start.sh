@@ -1,5 +1,0 @@
-#!/bin/sh
-# Container entrypoint: apply migrations, then start the API server.
-set -e
-alembic upgrade head
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers

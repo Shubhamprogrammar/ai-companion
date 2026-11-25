@@ -23,3 +23,8 @@ audio_storage/
 .vscode/
 .idea/
 voice_smoke_output/
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo

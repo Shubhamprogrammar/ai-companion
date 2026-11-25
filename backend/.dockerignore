@@ -1,0 +1,15 @@
+.venv
+.git
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+audio_storage
+docs
+tests
+requirements-dev.txt
+voice_smoke_output
+.claude
