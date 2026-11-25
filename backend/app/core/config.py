@@ -187,6 +187,10 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _require_async_driver(cls, value: str) -> str:
+        # Managed hosts (Render, Heroku, ...) hand out plain postgres:// URLs.
+        for prefix in ("postgresql://", "postgres://"):
+            if value.startswith(prefix):
+                value = "postgresql+asyncpg://" + value[len(prefix) :]
         if not value.startswith("postgresql+asyncpg://"):
             raise ValueError("DATABASE_URL must use the postgresql+asyncpg:// driver")
         return value
