@@ -73,7 +73,7 @@ async def test_transcribe_omits_languages_when_disabled() -> None:
     assert b"languages" not in seen["body"]
 
 
-async def test_transcribe_sends_roman_script_prompt_by_default() -> None:
+async def test_transcribe_sends_configured_prompt_only() -> None:
     seen: dict = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -81,11 +81,12 @@ async def test_transcribe_sends_roman_script_prompt_by_default() -> None:
         return httpx.Response(200, json={"text": "hi"})
 
     await OpenAISpeechToText(_client(handler), _settings()).transcribe(AUDIO)
-    assert b'name="prompt"' in seen["body"] and b"Roman script" in seen["body"]
+    assert b'name="prompt"' not in seen["body"]
 
     seen.clear()
-    await OpenAISpeechToText(_client(handler), _settings(openai_stt_prompt="")).transcribe(AUDIO)
-    assert b'name="prompt"' not in seen["body"]
+    stt = OpenAISpeechToText(_client(handler), _settings(openai_stt_prompt="Mira"))
+    await stt.transcribe(AUDIO)
+    assert b'name="prompt"\r\n\r\nMira' in seen["body"]
 
 
 async def test_transcribe_bad_audio_is_invalid_audio() -> None:

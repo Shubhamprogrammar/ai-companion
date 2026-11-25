@@ -135,6 +135,44 @@ async def test_full_voice_turn_streams_text_and_audio(ws_app, db_session: AsyncS
     assert roles == [MessageRole.USER, MessageRole.ASSISTANT]
 
 
+async def test_devanagari_transcript_is_shown_and_saved_in_roman_script(
+    ws_app, db_session: AsyncSession
+) -> None:
+    # Spoken Hinglish comes back from STT in Devanagari; one model call romanizes it,
+    # the next one is the actual reply.
+    llm = FakeLLM(["Bahut maza aa raha hai tumse baat karke.", "Sunke achha laga!"])
+    stt = FakeSTT("बहुत मज़ा आ रहा है तुमसे बात करके।")
+    async with _clients(ws_app(llm, stt=stt)) as client:
+        token = await _token(client)
+        async with aconnect_ws(f"{WS}/new", client) as ws:
+            await _start(ws, token)
+            await _speak(ws)
+            events = await _events(ws)
+
+    transcript = next(p for t, p in events if t == "transcript.done")
+    assert transcript["text"] == "Bahut maza aa raha hai tumse baat karke."
+    assert "<transcript>" in llm.requests[0].messages[0].content
+    assert llm.requests[1].messages[-1].content == "Bahut maza aa raha hai tumse baat karke."
+    saved = await db_session.scalar(select(Message).where(Message.role == MessageRole.USER))
+    assert saved is not None and saved.content == "Bahut maza aa raha hai tumse baat karke."
+
+
+async def test_romanization_can_be_switched_off(ws_app, infra_settings: Settings) -> None:
+    llm = FakeLLM(["Sunke achha laga!"])
+    stt = FakeSTT("बहुत मज़ा आ रहा है")
+    settings = infra_settings.model_copy(update={"voice_romanize_hinglish": False})
+    async with _clients(ws_app(llm, settings=settings, stt=stt)) as client:
+        token = await _token(client)
+        async with aconnect_ws(f"{WS}/new", client) as ws:
+            await _start(ws, token)
+            await _speak(ws)
+            events = await _events(ws)
+
+    transcript = next(p for t, p in events if t == "transcript.done")
+    assert transcript["text"] == "बहुत मज़ा आ रहा है"
+    assert len(llm.requests) == 1
+
+
 async def test_multiple_turns_share_the_conversation(ws_app) -> None:
     llm = FakeLLM(["First reply.", "Second reply."])
     async with _clients(ws_app(llm)) as client:

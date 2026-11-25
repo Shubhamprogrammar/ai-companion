@@ -28,10 +28,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 from redis.exceptions import RedisError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.agent import CompanionAgent
 from app.ai.llm import LLMProvider
+from app.ai.romanize import has_devanagari, romanize_hinglish
 from app.audio.audio_utils import OUTPUT_MIME, OutputAudioFormat, prepare_text_for_speech
 from app.audio.storage import AudioStore
 from app.audio.streaming import SentenceChunker, UtteranceBuffer
@@ -44,8 +46,8 @@ from app.core.rate_limit import RateLimiter
 from app.core.redis import RedisClient
 from app.core.security import PasswordHasher, TokenService
 from app.memory.embeddings import EmbeddingProvider
-from app.models.enums import MessageType
-from app.models.user import User
+from app.models.enums import Language, MessageType
+from app.models.user import User, UserProfile
 from app.repositories.conversations import ConversationRepository
 from app.repositories.revoked_tokens import RevokedAccessTokenStore
 from app.schemas.conversations import ConversationResponse, MessageResponse
@@ -371,7 +373,9 @@ class VoiceSession:
         try:
             async with self._deps.services(self._user_id) as svc:
                 await self._rate_limit()
-                state.user_text = text if text is not None else await self._transcribe(audio, state)
+                state.user_text = (
+                    text if text is not None else await self._transcribe(audio, state, svc)
+                )
                 state.handle = await svc.chat.begin_turn(
                     svc.user,
                     state.user_text,
@@ -457,7 +461,7 @@ class VoiceSession:
             logger.exception("voice session turn failed")
             await self._error(AppError(), response_id=state.response_id)
 
-    async def _transcribe(self, audio, state: _TurnState) -> str:
+    async def _transcribe(self, audio, state: _TurnState, svc: TurnServices) -> str:
         transcript: Transcript | None = None
         async for item in self._deps.stt.transcribe_stream(audio):
             if isinstance(item, Transcript):
@@ -468,8 +472,29 @@ class VoiceSession:
         if not text:
             raise NoSpeechError()
         state.stt_ms = transcript.latency_ms if transcript else None
+        text = await self._romanize(text, svc)
         await self._send.json({"type": "transcript.done", "text": text})
         return text
+
+    async def _romanize(self, text: str, svc: TurnServices) -> str:
+        """Spoken Hinglish comes back from STT in Devanagari; show and save it in Roman
+        script unless the user has chosen Hindi."""
+        settings = self._deps.settings
+        if not settings.voice_romanize_hinglish or not has_devanagari(text):
+            return text
+        preferred = await svc.session.scalar(
+            select(UserProfile.preferred_language).where(UserProfile.user_id == self._user_id)
+        )
+        if preferred is Language.HINDI:
+            return text
+        return await romanize_hinglish(
+            self._deps.llm,
+            text,
+            model=settings.openai_memory_model,
+            safety_identifier=CompanionAgent(self._deps.llm, settings).safety_identifier(
+                self._user_id
+            ),
+        )
 
     async def _speak(
         self, queue: asyncio.Queue, template: SpeechRequest, state: _TurnState
