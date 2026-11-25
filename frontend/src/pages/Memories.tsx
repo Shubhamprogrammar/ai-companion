@@ -83,7 +83,7 @@ export function MemoriesPage() {
         actions={
           <>
             <button className="btn" onClick={() => setWipe(true)} disabled={!items.length}>
-              <Icon name="trash" /> Forget everything
+              <Icon name="trash" /> Delete all
             </button>
             <button className="btn btn-primary" onClick={() => setEditing("new")}>
               <Icon name="plus" /> Add memory

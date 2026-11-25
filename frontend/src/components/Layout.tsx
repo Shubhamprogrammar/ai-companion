@@ -109,7 +109,7 @@ function ConversationList() {
         {!conversationsLoaded && <div className="convo-skeleton" />}
         {conversationsLoaded && conversations.length === 0 && (
           <p className="muted small convos-empty">
-            {showArchived ? "Nothing archived." : "No conversations yet. Say hi!"}
+            {showArchived ? "Nothing archived." : "No conversations yet."}
           </p>
         )}
         {conversations.map((c) => (

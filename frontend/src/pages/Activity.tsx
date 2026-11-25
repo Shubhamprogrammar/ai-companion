@@ -47,7 +47,7 @@ export function ActivityPage() {
     try {
       const result = decision === "approve" ? await api.approve(p.id) : await api.reject(p.id);
       toast(
-        decision === "reject" ? "Declined" : result.status === "succeeded" ? "Done!" : `Didn't go through (${humanize(result.status)})`,
+        decision === "reject" ? "Declined" : result.status === "succeeded" ? "Done" : `Didn't go through (${humanize(result.status)})`,
         result.status === "succeeded" || decision === "reject" ? "success" : "error",
       );
       await Promise.all([reloadPending(), load()]);
@@ -70,7 +70,7 @@ export function ActivityPage() {
           <ul className="list">
             {pending.map((p) => (
               <li key={p.id} className="list-item approval">
-                <Icon name="sparkle" />
+                <Icon name="checkSquare" />
                 <div className="list-body">
                   <div className="list-title">{p.confirmation_summary ?? toolLabel(p.tool_name)}</div>
                   <div className="list-meta muted">

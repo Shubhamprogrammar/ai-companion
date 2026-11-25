@@ -28,3 +28,4 @@ voice_smoke_output/
 node_modules/
 dist/
 *.tsbuildinfo
+.env-vault.json

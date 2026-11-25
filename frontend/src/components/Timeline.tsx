@@ -50,7 +50,7 @@ export function Timeline({
           case "tool":
             return (
               <li key={item.key} className={`tool-chip tool-${item.status}`}>
-                {item.status === "running" ? <span className="dot-pulse" /> : <Icon name={item.status === "succeeded" ? "check" : "sparkle"} size={14} />}
+                {item.status === "running" ? <span className="dot-pulse" /> : <Icon name={item.status === "succeeded" ? "check" : "activity"} size={14} />}
                 <span>
                   {toolLabel(item.tool)}
                   {item.status !== "running" && item.status !== "succeeded" && ` — ${TOOL_STATUS_TEXT[item.status] ?? item.status}`}
@@ -127,8 +127,8 @@ function ConfirmCard({
   return (
     <li className={`confirm-card state-${state}`}>
       <div className="confirm-head">
-        <Icon name="sparkle" size={16} />
-        <span>{COMPANION_NAME} wants to:</span>
+        <Icon name="checkSquare" size={14} />
+        <span>Approval required</span>
       </div>
       <p className="confirm-summary">{item.summary}</p>
       {state === "pending" || state === "working" ? (

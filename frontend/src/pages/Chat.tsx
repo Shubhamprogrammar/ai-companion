@@ -16,7 +16,7 @@ const SUGGESTIONS = [
   "Remind me to call Mom tomorrow at 7pm",
   "What do you remember about me?",
   "Add a task: finish the project report by Friday",
-  "Help me plan a calm evening",
+  "What's on my list for this week?",
 ];
 
 const VOICE_ERRORS: Record<string, string> = {
@@ -430,7 +430,7 @@ export function ChatPage() {
       const result = decision === "approve" ? await tools.approve(confirmationId) : await tools.reject(confirmationId);
       setState(result.status);
       if (decision === "approve") {
-        toast(result.status === "succeeded" ? "Done!" : `That didn't go through (${result.status}).`, result.status === "succeeded" ? "success" : "error");
+        toast(result.status === "succeeded" ? "Done" : `That didn't go through (${result.status}).`, result.status === "succeeded" ? "success" : "error");
       }
     } catch (err) {
       setState("pending");
@@ -479,10 +479,12 @@ export function ChatPage() {
           {loading && <Spinner label="Loading conversation…" />}
           {showWelcome && (
             <div className="welcome">
-              <div className="welcome-orb" aria-hidden="true" />
-              <h2>{name ? `Hey ${name}, ` : "Hey, "}what's on your mind?</h2>
+              <div className="welcome-mark" aria-hidden="true">
+                {COMPANION_NAME.charAt(0)}
+              </div>
+              <h2>{name ? `How can I help, ${name}?` : "How can I help?"}</h2>
               <p className="muted">
-                Talk or type. {COMPANION_NAME} remembers what matters and can set reminders and tasks for you.
+                Start by voice or text. {COMPANION_NAME} can recall context, and manage your reminders and tasks.
               </p>
               <div className="suggestions">
                 {SUGGESTIONS.map((s) => (
@@ -492,7 +494,7 @@ export function ChatPage() {
                 ))}
               </div>
               <button className="btn btn-primary btn-lg" onClick={() => void startVoice()}>
-                <Icon name="mic" /> Start talking
+                <Icon name="mic" /> Start voice session
               </button>
             </div>
           )}

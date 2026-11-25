@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, errorMessage } from "../api/client";
 import { auth } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import { Icon } from "../components/Icon";
 import { Field } from "../components/ui";
 import { COMPANION_NAME } from "../lib/format";
 
@@ -10,10 +11,38 @@ function AuthFrame({ title, subtitle, children }: { title: string; subtitle: str
   return (
     <div className="auth">
       <div className="auth-side" aria-hidden="true">
-        <div className="auth-orb" />
-        <blockquote>
-          “A friend who listens, remembers what matters, and quietly keeps your day on track.”
-        </blockquote>
+        <div className="brand">
+          <span className="brand-mark">{COMPANION_NAME.charAt(0)}</span>
+          <span className="brand-name">{COMPANION_NAME}</span>
+        </div>
+        <div className="auth-side-copy">
+          <h2>A voice assistant that keeps context across every conversation.</h2>
+          <p>Talk or type. Memory, reminders and tasks stay in one place, under your control.</p>
+          <ul className="auth-features">
+            <li>
+              <Icon name="brain" size={18} />
+              <span>
+                <strong>Persistent memory</strong>
+                Review, edit or delete anything it has stored.
+              </span>
+            </li>
+            <li>
+              <Icon name="checkSquare" size={18} />
+              <span>
+                <strong>Tasks and reminders</strong>
+                Created from conversation, managed from one list.
+              </span>
+            </li>
+            <li>
+              <Icon name="activity" size={18} />
+              <span>
+                <strong>Approval for every action</strong>
+                Changes wait for your confirmation and are fully logged.
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div className="auth-side-foot">© {new Date().getFullYear()} {COMPANION_NAME}</div>
       </div>
       <div className="auth-main">
         <div className="auth-card">
@@ -57,7 +86,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthFrame title="Welcome back" subtitle={`Sign in to keep talking with ${COMPANION_NAME}.`}>
+    <AuthFrame title="Sign in" subtitle="Enter your email and password to continue.">
       <form className="form" onSubmit={submit}>
         <Field label="Email">
           <input className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
@@ -71,7 +100,7 @@ export function LoginPage() {
         </button>
       </form>
       <p className="auth-switch muted">
-        New here? <Link to="/register">Create an account</Link>
+        Don't have an account? <Link to="/register">Create an account</Link>
       </p>
     </AuthFrame>
   );
@@ -112,9 +141,9 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthFrame title="Create your account" subtitle={`${COMPANION_NAME} remembers you between conversations.`}>
+    <AuthFrame title="Create an account" subtitle="Set up your workspace in under a minute.">
       <form className="form" onSubmit={submit}>
-        <Field label="What should I call you?" error={errors.display_name}>
+        <Field label="Display name" error={errors.display_name}>
           <input className="input" autoComplete="given-name" maxLength={100} value={form.name} onChange={set("name")} placeholder="Optional" autoFocus />
         </Field>
         <Field label="Email" error={errors.email}>

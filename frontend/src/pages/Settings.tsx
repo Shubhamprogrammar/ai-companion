@@ -103,7 +103,7 @@ export function SettingsPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Settings" subtitle="Make the companion yours." />
+      <PageHeader title="Settings" subtitle="Profile, voice and privacy preferences." />
 
       <section className="panel">
         <h2>Profile</h2>
