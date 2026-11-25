@@ -1,0 +1,77 @@
+# Render Blueprint: API + Redis + maintenance cron. Postgres is hosted on Neon.
+# Deploy: Render dashboard → New → Blueprint → pick this repo.
+# Values marked `sync: false` are asked for once in the dashboard (never committed).
+
+services:
+  - type: keyvalue
+    name: companion-redis
+    plan: free
+    ipAllowList: []          # internal connections only
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: companion-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter            # free works for testing but sleeps after 15 min idle
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: "8000"
+      - key: LOG_JSON
+        value: "true"
+      # Neon direct (non-pooler) endpoint, e.g.
+      # postgresql://USER:PASS@ep-xxx.REGION.aws.neon.tech/neondb?ssl=require
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: companion-redis, property: connectionString }
+      - key: SECRET_KEY
+        generateValue: true
+      # Render's load balancer is the only thing that can reach the container.
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: AUDIO_RETENTION_ENABLED
+        value: "false"       # container disk is ephemeral
+      - key: MEMORY_ENABLED
+        value: "true"
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-6.2-sol
+      - key: OPENAI_STT_MODEL
+        value: gpt-transcribe
+      - key: OPENAI_TTS_MODEL
+        value: gpt-4o-mini-tts
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: OPENAI_TTS_VOICE
+        value: coral
+      - key: OPENAI_API_KEY
+        sync: false
+      # JSON lists, e.g. ["https://your-app.vercel.app"] and ["companion-api.onrender.com"]
+      - key: CORS_ORIGINS
+        sync: false
+      - key: TRUSTED_HOSTS
+        sync: false
+
+  - type: cron
+    name: companion-maintenance
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    schedule: "0 */6 * * *"
+    dockerCommand: python -m scripts.maintenance
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromService: { type: web, name: companion-api, envVarKey: DATABASE_URL }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: companion-redis, property: connectionString }
+      - key: SECRET_KEY
+        fromService: { type: web, name: companion-api, envVarKey: SECRET_KEY }

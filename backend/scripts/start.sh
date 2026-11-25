@@ -8,6 +8,7 @@
 #   FORWARDED_ALLOW_IPS=...     proxies trusted for X-Forwarded-For/-Proto (default
 #                               127.0.0.1). Set it to your reverse proxy's address, or
 #                               client IPs (rate limits, audit logs) are the proxy's.
+#   PORT=N                      listen port (default 8000; Render sets this)
 #   GRACEFUL_SHUTDOWN_SECONDS   time given to in-flight requests on SIGTERM (default 20)
 #
 # WebSocket messages are capped at WS_MAX_FRAME_BYTES (+ JSON overhead) by uvicorn itself,
@@ -17,7 +18,7 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     alembic upgrade head
 fi
 exec uvicorn app.main:app \
-    --host 0.0.0.0 --port 8000 \
+    --host 0.0.0.0 --port "${PORT:-8000}" \
     --proxy-headers \
     --no-server-header \
     --ws-max-size "$(( ${WS_MAX_FRAME_BYTES:-524288} + 16384 ))" \
