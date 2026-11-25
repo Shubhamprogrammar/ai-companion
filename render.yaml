@@ -1,20 +1,16 @@
-# Render Blueprint: API + Redis + maintenance cron. Postgres is hosted on Neon.
+# Render Blueprint (free plan): API only. Postgres is on Neon, Redis on Redis Cloud.
+# Free web services sleep after ~15 min idle; the first request then takes ~1 min.
 # Deploy: Render dashboard → New → Blueprint → pick this repo.
 # Values marked `sync: false` are asked for once in the dashboard (never committed).
 
 services:
-  - type: keyvalue
-    name: companion-redis
-    plan: free
-    ipAllowList: []          # internal connections only
-    maxmemoryPolicy: noeviction
-
   - type: web
     name: companion-api
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter            # free works for testing but sleeps after 15 min idle
+    plan: free
+    region: ohio             # same AWS region as the Neon database (us-east-2)
     healthCheckPath: /api/v1/health
     envVars:
       - key: APP_ENV
@@ -28,7 +24,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
-        fromService: { type: keyvalue, name: companion-redis, property: connectionString }
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       # Render's load balancer is the only thing that can reach the container.
@@ -58,20 +54,5 @@ services:
       - key: TRUSTED_HOSTS
         sync: false
 
-  - type: cron
-    name: companion-maintenance
-    runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
-    plan: starter
-    schedule: "0 */6 * * *"
-    dockerCommand: python -m scripts.maintenance
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: DATABASE_URL
-        fromService: { type: web, name: companion-api, envVarKey: DATABASE_URL }
-      - key: REDIS_URL
-        fromService: { type: keyvalue, name: companion-redis, property: connectionString }
-      - key: SECRET_KEY
-        fromService: { type: web, name: companion-api, envVarKey: SECRET_KEY }
+# Housekeeping (retention purge, token pruning) needs a paid cron job on Render.
+# To enable later, add a `type: cron` service running `python -m scripts.maintenance`.
