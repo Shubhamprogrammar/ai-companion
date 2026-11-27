@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "env-vault-cli-tool": "^1.0.12"
+  }
+}
