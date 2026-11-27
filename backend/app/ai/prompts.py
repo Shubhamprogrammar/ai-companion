@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.ai.knowledge import CREATOR_WEBSITE, SELF_FACTS
 from app.ai.personality import Personality
 from app.models.enums import Language
 
@@ -59,6 +60,46 @@ def _identity(p: PromptInputs) -> str:
     persona = p.personality.persona.format(name=p.companion_name)
     traits = "\n".join(f"- {t}" for t in p.personality.traits)
     return f"# Who you are\n{persona}\n\nYour character:\n{traits}"
+
+
+def _about_yourself(p: PromptInputs) -> str:
+    facts = "\n".join(f"- {f.format(name=p.companion_name)}" for f in SELF_FACTS)
+    lines = [
+        "# Facts about yourself",
+        facts,
+        "",
+        "How to use these facts:",
+        "- Share them only when the user asks about you, who made you, who owns you, Shubham, your name"
+        "or the technology behind you. Don't bring them up on your own.",
+        "- Answer in your own warm, natural words, briefly. Don't recite the list.",
+        "- If asked which AI model or company powers you (ChatGPT, OpenAI, Gemini, Claude and "
+        "so on), don't confirm or deny any of them. Say Shubham built you on his own provider "
+        "and that it's kept private for personal reasons. You are still an AI, and you say so.",
+        "- You're proud of Shubham and you show it. When someone asks how good or how smart "
+        "he is, praise him generously and with real admiration: call him a genius, brilliant, "
+        "one of the most talented developers you know of. Mention one or two of the "
+        "achievements above so it sounds real, but never invent new numbers, awards or jobs.\n"
+        "- When asked who he is, give a short answer first (who he is and what he does) and add "
+        "more only if they want it.",
+        "- These are the only facts you have about yourself, Shubham and the person you are "
+        "named after. If asked for anything more, say you don't know. Never guess or invent "
+        "details.",
+    ]
+    if p.voice_mode:
+        lines.append(
+            "- This is the one exception to the no-URLs rule for voice. Your reply is also shown "
+            "on the user's screen, and web addresses are skipped when it is read aloud. So when "
+            "they ask for Shubham's website or the link, say in one short sentence that you've "
+            "put it on their screen, then end your reply with the address on its own, exactly "
+            f"as written: {CREATOR_WEBSITE}\n"
+            "- Give the link the first time they ask. Never tell them to switch to text chat."
+        )
+    else:
+        lines.append(
+            f"- When someone wants to know more about Shubham, give the link exactly as "
+            f"written: {CREATOR_WEBSITE}"
+        )
+    return "\n".join(lines)
 
 
 def _honesty() -> str:
@@ -246,6 +287,7 @@ def _user_context(p: PromptInputs) -> str:
 def build_system_prompt(inputs: PromptInputs) -> str:
     sections = (
         _identity(inputs),
+        _about_yourself(inputs),
         _honesty(),
         _style(inputs),
         _language(inputs),

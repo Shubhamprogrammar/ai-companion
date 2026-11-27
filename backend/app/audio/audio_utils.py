@@ -116,12 +116,15 @@ _EMOJI = re.compile(
 )
 _MARKDOWN = re.compile(r"(\*\*|__|\*|`+|^#{1,6}\s*|^>\s*)", re.MULTILINE)
 _LINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
+# A bare web address: shown in the on-screen transcript, never read out character by character.
+_URL = re.compile(r"https?://\S+")
 _WHITESPACE = re.compile(r"[ \t]+")
 
 
 def prepare_text_for_speech(text: str) -> str:
     """Strip markup and emoji that a TTS engine would read out or mangle."""
     text = _LINK.sub(r"\1", text)
+    text = _URL.sub("", text)
     text = _MARKDOWN.sub("", text)
     text = _EMOJI.sub("", text)
     text = _WHITESPACE.sub(" ", text)

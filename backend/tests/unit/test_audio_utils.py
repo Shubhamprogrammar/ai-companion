@@ -60,6 +60,12 @@ def test_prepare_text_for_speech_strips_markup_and_emoji() -> None:
     assert prepare_text_for_speech(text) == "Haan yaar check this\nStep 1\ncode here"
 
 
+def test_prepare_text_for_speech_skips_bare_urls() -> None:
+    text = "Maine link screen par daal diya hai. https://shubham-maurya.sas3d.in/"
+    assert prepare_text_for_speech(text) == "Maine link screen par daal diya hai."
+    assert prepare_text_for_speech("https://shubham-maurya.sas3d.in/") == ""
+
+
 def test_prepare_text_keeps_devanagari_and_punctuation() -> None:
     assert prepare_text_for_speech("यार, चिंता मत करो। Sab theek hoga!") == (
         "यार, चिंता मत करो। Sab theek hoga!"

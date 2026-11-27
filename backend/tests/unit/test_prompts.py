@@ -124,3 +124,35 @@ def test_pending_confirmations_block() -> None:
     assert "<pending_confirmations>" in prompt
     assert "Delete reminder  x" in prompt and "<x>" not in prompt  # tags stripped
     assert "confirm_pending_action" in prompt
+
+
+def test_knows_creator_owner_and_name_story() -> None:
+    prompt = _prompt()
+    assert "# Facts about yourself" in prompt
+    assert "created by Shubham" in prompt
+    assert "owner" in prompt
+    assert "in remembrance of her" in prompt
+    assert "https://shubham-maurya.sas3d.in/" in prompt
+    assert "{name}" not in prompt
+
+
+def test_provider_is_kept_private_without_guessing() -> None:
+    prompt = _prompt()
+    assert "don't confirm or deny" in prompt
+    assert "Never guess or invent" in prompt
+
+
+def test_voice_mode_puts_website_on_screen() -> None:
+    voice = _prompt(voice_mode=True)
+    assert "put it on their screen" in voice
+    assert "Never tell them to switch to text chat" in voice
+    assert "give the link exactly as written" in _prompt()
+
+
+def test_knows_who_shubham_is_and_what_he_does() -> None:
+    prompt = _prompt()
+    assert "Shubham Maurya is a full stack software developer" in prompt
+    assert "9.8 out of 10" in prompt
+    assert "praise him generously" in prompt
+    assert "never invent new numbers" in prompt
+    assert "ranked first" not in prompt
