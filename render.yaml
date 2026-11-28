@@ -46,6 +46,9 @@ services:
         value: text-embedding-3-small
       - key: OPENAI_TTS_VOICE
         value: coral
+      # Gives Mira the search_web tool (OpenAI built-in web_search, billed per search).
+      - key: WEB_SEARCH_PROVIDER
+        value: openai
       - key: OPENAI_API_KEY
         sync: false
       # JSON lists, e.g. ["https://your-app.vercel.app"] and ["companion-api.onrender.com"]
